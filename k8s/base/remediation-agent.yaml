@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remediation-agent
+  namespace: security-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: remediation-agent}
+  template:
+    metadata:
+      labels: {app: remediation-agent}
+    spec:
+      # Only this Deployment mounts remediation-agent-sa - it's the only
+      # component in the system allowed to touch demo-workloads at all.
+      serviceAccountName: remediation-agent-sa
+      automountServiceAccountToken: true
+      containers:
+        - name: remediation-agent
+          image: atrp/remediation-agent:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: pipeline-config}
+          env:
+            - name: GRPC_PORT
+              value: "50052"
+            - name: METRICS_PORT
+              value: "9103"
+          ports:
+            - containerPort: 50052
+              name: grpc
+            - containerPort: 9103
+              name: metrics
+          resources:
+            requests: {cpu: "50m", memory: "64Mi"}
+            limits: {cpu: "250m", memory: "128Mi"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remediation-agent
+  namespace: security-pipeline
+  labels: {app: remediation-agent}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9103"
+spec:
+  selector: {app: remediation-agent}
+  ports:
+    - name: grpc
+      port: 50052
+      targetPort: 50052
+    - name: metrics
+      port: 9103
+      targetPort: 9103

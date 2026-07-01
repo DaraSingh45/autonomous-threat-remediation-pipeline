@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-config
+  namespace: security-pipeline
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  EVENTS_TOPIC: "security-events"
+  AUDIT_TOPIC: "audit-log"
+  DECISION_ENGINE_ADDR: "decision-engine:50051"
+  REMEDIATION_AGENT_ADDR: "remediation-agent:50052"
+  MOCK_IAM_URL: "http://mock-iam-service:8080"
+  AUTONOMOUS_MODE: "true"
+  SIMULATED_MANUAL_TRIAGE_SECONDS: "20"
+  REMEDIATION_COOLDOWN_SECONDS: "300"
+  MIN_SEVERITY_TO_ESCALATE: "medium"
+  K8S_MODE: "real"
+  LOG_LEVEL: "INFO"

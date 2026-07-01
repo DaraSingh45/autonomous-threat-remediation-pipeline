@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-generator
+  namespace: security-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: event-generator}
+  template:
+    metadata:
+      labels: {app: event-generator}
+    spec:
+      containers:
+        - name: event-generator
+          image: atrp/event-generator:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: pipeline-config}
+          env:
+            - name: EVENTS_PER_SECOND
+              value: "5"
+            - name: ATTACK_PROBABILITY
+              value: "0.08"
+            - name: METRICS_PORT
+              value: "9100"
+          ports:
+            - containerPort: 9100
+              name: metrics
+          resources:
+            requests: {cpu: "50m", memory: "64Mi"}
+            limits: {cpu: "250m", memory: "128Mi"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-generator
+  namespace: security-pipeline
+  labels: {app: event-generator}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9100"
+spec:
+  selector: {app: event-generator}
+  ports:
+    - name: metrics
+      port: 9100
+      targetPort: 9100

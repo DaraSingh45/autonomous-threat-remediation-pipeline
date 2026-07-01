@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detection-engine
+  namespace: security-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: detection-engine}
+  template:
+    metadata:
+      labels: {app: detection-engine}
+    spec:
+      containers:
+        - name: detection-engine
+          image: atrp/detection-engine:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: pipeline-config}
+          env:
+            - name: METRICS_PORT
+              value: "9101"
+          ports:
+            - containerPort: 9101
+              name: metrics
+          resources:
+            # The Isolation Forest model is loaded into memory at startup -
+            # give this one a bit more headroom than the other services.
+            requests: {cpu: "150m", memory: "256Mi"}
+            limits: {cpu: "500m", memory: "512Mi"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: detection-engine
+  namespace: security-pipeline
+  labels: {app: detection-engine}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9101"
+spec:
+  selector: {app: detection-engine}
+  ports:
+    - name: metrics
+      port: 9101
+      targetPort: 9101

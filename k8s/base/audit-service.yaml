@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-service
+  namespace: security-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: audit-service}
+  template:
+    metadata:
+      labels: {app: audit-service}
+    spec:
+      containers:
+        - name: audit-service
+          image: atrp/audit-service:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: pipeline-config}
+          env:
+            - name: PORT
+              value: "8090"
+            - name: AUDIT_DB_PATH
+              value: "/data/audit.db"
+          ports:
+            - containerPort: 8090
+          volumeMounts:
+            - name: audit-data
+              mountPath: /data
+          readinessProbe:
+            httpGet: {path: /health, port: 8090}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests: {cpu: "50m", memory: "64Mi"}
+            limits: {cpu: "250m", memory: "128Mi"}
+      volumes:
+        # emptyDir keeps this demo dependency-free; swap for a PersistentVolumeClaim
+        # to survive pod restarts in a real deployment.
+        - name: audit-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-service
+  namespace: security-pipeline
+  labels: {app: audit-service}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8090"
+spec:
+  selector: {app: audit-service}
+  ports:
+    - name: http
+      port: 8090
+      targetPort: 8090

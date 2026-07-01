@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+// Autonomous Threat Remediation Pipeline
+// gRPC contract shared by the Detection Engine, Decision Engine and
+// Remediation Agent. This mirrors a typical SOAR "detect -> decide -> act"
+// playbook handoff, implemented as low-latency service-to-service calls
+// instead of alert tickets.
+
+package threatpipeline.v1;
+
+// ---------------------------------------------------------------------------
+// Detection Engine -> Decision Engine
+// ---------------------------------------------------------------------------
+
+// A verified detection produced by the rule engine and/or the Isolation
+// Forest anomaly model, ready for a remediation decision.
+message ThreatDetection {
+  string event_id = 1;            // originating security event id
+  string detection_id = 2;        // unique id for this detection
+  int64 event_timestamp_ms = 3;   // when the raw event occurred
+  int64 detected_at_ms = 4;       // when detection completed (for MTTD)
+
+  // "rule_engine" | "isolation_forest" | "hybrid"
+  string detection_source = 5;
+  string rule_name = 6;           // populated if a deterministic rule fired
+  double anomaly_score = 7;       // Isolation Forest decision_function score
+
+  // "low" | "medium" | "high" | "critical"
+  string severity = 8;
+
+  // "pod" | "user" | "host"
+  string entity_type = 9;
+  string entity_id = 10;          // pod name / username / host id
+  string namespace = 11;          // k8s namespace, if entity_type == pod
+
+  string event_type = 12;         // failed_login, process_spawn, ...
+  string raw_event_json = 13;     // full original event, for the audit trail
+}
+
+message DecisionResponse {
+  string decision_id = 1;
+  bool approved = 2;              // true if a remediation action was taken
+  string action = 3;              // "isolate_pod" | "revoke_credential" | "monitor" | "none"
+  string reasoning = 4;           // human-readable policy explanation
+  bool autonomous = 5;            // false when running in simulated-manual mode
+  int64 decided_at_ms = 6;
+  bool remediation_success = 7;
+  string remediation_details = 8;
+  string remediation_id = 9;
+}
+
+service DecisionService {
+  // Evaluate a detection against policy and, if warranted, drive the
+  // Remediation Agent before returning the final outcome.
+  rpc EvaluateThreat(ThreatDetection) returns (DecisionResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Decision Engine -> Remediation Agent
+// ---------------------------------------------------------------------------
+
+message RemediationRequest {
+  string decision_id = 1;
+  string event_id = 2;
+  string detection_id = 3;
+  string action = 4;              // "isolate_pod" | "revoke_credential"
+  string entity_type = 5;         // "pod" | "user"
+  string entity_id = 6;
+  string namespace = 7;
+  string severity = 8;
+  string reasoning = 9;
+}
+
+message RemediationResponse {
+  string remediation_id = 1;
+  bool success = 2;
+  string details = 3;             // what actually happened (or simulation note)
+  int64 remediation_started_ms = 4;
+  int64 completed_at_ms = 5;
+  string mode = 6;                // "real" | "simulated"
+}
+
+service RemediationService {
+  rpc ExecuteRemediation(RemediationRequest) returns (RemediationResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Shared
+// ---------------------------------------------------------------------------
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1; // "SERVING" | "NOT_SERVING"
+}

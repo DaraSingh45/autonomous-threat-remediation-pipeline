@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payments-api-7c9f4b8d6-x2z9k
+  namespace: demo-workloads
+  labels: {app: payments-api}
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27-alpine
+      ports: [{containerPort: 80}]
+      resources:
+        requests: {cpu: "25m", memory: "32Mi"}
+        limits: {cpu: "100m", memory: "64Mi"}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: billing-worker-5f6d8c9b4-p8m2q
+  namespace: demo-workloads
+  labels: {app: billing-worker}
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27-alpine
+      ports: [{containerPort: 80}]
+      resources:
+        requests: {cpu: "25m", memory: "32Mi"}
+        limits: {cpu: "100m", memory: "64Mi"}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: checkout-frontend-6b7c8d9e5-n3v7r
+  namespace: demo-workloads
+  labels: {app: checkout-frontend}
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27-alpine
+      ports: [{containerPort: 80}]
+      resources:
+        requests: {cpu: "25m", memory: "32Mi"}
+        limits: {cpu: "100m", memory: "64Mi"}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: auth-service-8d9e6f7a2-k4t1w
+  namespace: demo-workloads
+  labels: {app: auth-service}
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27-alpine
+      ports: [{containerPort: 80}]
+      resources:
+        requests: {cpu: "25m", memory: "32Mi"}
+        limits: {cpu: "100m", memory: "64Mi"}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inventory-sync-4a5b6c7d8-q9r2s
+  namespace: demo-workloads
+  labels: {app: inventory-sync}
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27-alpine
+      ports: [{containerPort: 80}]
+      resources:
+        requests: {cpu: "25m", memory: "32Mi"}
+        limits: {cpu: "100m", memory: "64Mi"}

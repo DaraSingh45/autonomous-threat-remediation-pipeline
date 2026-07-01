@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decision-engine
+  namespace: security-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: decision-engine}
+  template:
+    metadata:
+      labels: {app: decision-engine}
+    spec:
+      containers:
+        - name: decision-engine
+          image: atrp/decision-engine:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: pipeline-config}
+          env:
+            - name: GRPC_PORT
+              value: "50051"
+            - name: METRICS_PORT
+              value: "9102"
+          ports:
+            - containerPort: 50051
+              name: grpc
+            - containerPort: 9102
+              name: metrics
+          resources:
+            requests: {cpu: "100m", memory: "128Mi"}
+            limits: {cpu: "500m", memory: "256Mi"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: decision-engine
+  namespace: security-pipeline
+  labels: {app: decision-engine}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9102"
+spec:
+  selector: {app: decision-engine}
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+    - name: metrics
+      port: 9102
+      targetPort: 9102

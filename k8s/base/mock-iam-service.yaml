@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-iam-service
+  namespace: security-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: mock-iam-service}
+  template:
+    metadata:
+      labels: {app: mock-iam-service}
+    spec:
+      containers:
+        - name: mock-iam-service
+          image: atrp/mock-iam-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: {path: /health, port: 8080}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: 8080}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: {cpu: "50m", memory: "64Mi"}
+            limits: {cpu: "250m", memory: "128Mi"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-iam-service
+  namespace: security-pipeline
+  labels: {app: mock-iam-service}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  selector: {app: mock-iam-service}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
