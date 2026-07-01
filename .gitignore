@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+*.egg
+
+# Env / secrets
+.env
+*.local.env
+
+# Data / runtime artifacts
+*.db
+*.sqlite3
+audit-data/
+grafana-data/
+
+# Docker
+docker-compose.override.yml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Kubernetes local kubeconfigs, if ever copied into the repo by mistake
+kubeconfig*.yaml
+*.kubeconfig
+
+# Keep the shipped trained model - do NOT ignore models/*.pkl
+!services/detection_engine/models/*.pkl
